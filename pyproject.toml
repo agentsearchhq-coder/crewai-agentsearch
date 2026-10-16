@@ -1,0 +1,30 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "crewai-agentsearch"
+version = "0.2.0"
+description = "CrewAI tools for AgentSearch: free live web search, plus pay-per-call extract and JS render ($0.005 USDC on Base via x402)"
+readme = "README.md"
+license = "MIT"
+requires-python = ">=3.10"
+dependencies = ["crewai>=0.100", "httpx>=0.25", "pydantic>=2"]
+keywords = ["crewai", "agentsearch", "web-search", "tools", "agents", "x402"]
+
+[project.optional-dependencies]
+paid = ["x402[evm]>=2.0"]
+test = ["pytest>=7"]
+
+[project.urls]
+Repository = "https://github.com/agentsearchhq-coder/crewai-agentsearch"
+Issues = "https://github.com/agentsearchhq-coder/crewai-agentsearch/issues"
+Homepage = "https://agentsearchhq.com/?utm_source=crewai-agentsearch&utm_medium=package"
+Documentation = "https://agentsearchhq.com/agents.md?utm_source=crewai-agentsearch&utm_medium=package"
+
+[tool.hatch.build.targets.wheel]
+packages = ["crewai_agentsearch"]
+
+[tool.hatch.build.targets.sdist]
+include = ["crewai_agentsearch", "tests", "README.md", "LICENSE", "pyproject.toml"]
+
