@@ -30,7 +30,10 @@ class RenderInput(BaseModel):
 
 
 class AgentSearchTool(BaseTool):
-    """Live web search. Free by default (25/day per user); paid and unlimited when a wallet key is set."""
+    """Live web search. Free by default (up to 25 searches/day per IP).
+
+    Paid, unlimited search is opt-in only: mode="paid", or mode="auto" with AGENTSEARCH_MODE=paid
+    (needs the [paid] extra and a wallet key). A wallet key alone does not switch search to paid."""
 
     name: str = "agentsearch_search"
     description: str = "Live web search. Returns up to 5 ranked results (title, url, content). Use for current facts or finding URLs."
