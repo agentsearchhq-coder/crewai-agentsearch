@@ -17,7 +17,7 @@ class ExtractInput(BaseModel):
     url: str = Field(description="http(s) URL to extract")
     formats: Optional[list[str]] = Field(default=None, description='e.g. ["markdown"]')
     max_chars: Optional[int] = Field(default=None, gt=0)
-    render_fallback: Optional[bool] = Field(default=None, description="If extract returns thin content, retry with render (extra $0.005)")
+    render_fallback: Optional[bool] = Field(default=None, description="If extract returns thin content, retry with render (a second paid call, $0.010)")
 
 
 class RenderInput(BaseModel):
@@ -46,7 +46,7 @@ class AgentSearchTool(BaseTool):
 
 class AgentSearchExtractTool(BaseTool):
     name: str = "agentsearch_extract"
-    description: str = "Fetch a URL and return its main content as clean text/markdown. Fast and best for articles, docs and static pages. If the result is empty or thin (JavaScript-heavy page, SPA, app shell), call agentsearch_render on the same URL, or pass render_fallback=true to do that automatically (a second $0.005 call). Paid: $0.005 per call (needs a wallet)."
+    description: str = "Fetch a URL and return its main content as clean text/markdown. Fast and best for articles, docs and static pages. If the result is empty or thin (JavaScript-heavy page, SPA, app shell), call agentsearch_render on the same URL, or pass render_fallback=true to do that automatically (a second paid call). Paid: $0.007 per call via AgentSearch's x402 API (needs a wallet)."
     args_schema: Type[BaseModel] = ExtractInput
 
     def _run(self, url: str, formats: Optional[list[str]] = None, max_chars: Optional[int] = None,
@@ -56,7 +56,7 @@ class AgentSearchExtractTool(BaseTool):
 
 class AgentSearchRenderTool(BaseTool):
     name: str = "agentsearch_render"
-    description: str = "Render a page in a real headless browser and return markdown/text/html/links. Use when agentsearch_extract returns empty or thin content, or for JavaScript-heavy pages (SPAs, dashboards, content loaded by scripts). Paid: $0.005 per call (needs a wallet)."
+    description: str = "Render a page in a real headless browser and return markdown/text/html/links. Use when agentsearch_extract returns empty or thin content, or for JavaScript-heavy pages (SPAs, dashboards, content loaded by scripts). Paid: $0.010 per call via AgentSearch's x402 API (needs a wallet)."
     args_schema: Type[BaseModel] = RenderInput
 
     def _run(self, url: str, formats: Optional[list[str]] = None, max_chars: Optional[int] = None,

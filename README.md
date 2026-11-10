@@ -5,8 +5,8 @@
 | Tool | Name | Cost |
 |---|---|---|
 | `AgentSearchTool` | `agentsearch_search` | **Free** (up to 25 searches/day per IP, up to 5 results, no key). Paid and unlimited only when you opt in (see Paid mode). |
-| `AgentSearchExtractTool` | `agentsearch_extract` | $0.005/call (USDC on Base via x402) |
-| `AgentSearchRenderTool` | `agentsearch_render` | $0.005/call (headless browser for JS pages) |
+| `AgentSearchExtractTool` | `agentsearch_extract` | $0.007/call (USDC on Base via x402 to AgentSearch) |
+| `AgentSearchRenderTool` | `agentsearch_render` | $0.010/call (headless browser for JS pages) |
 
 ## Install
 
@@ -33,7 +33,7 @@ Add `AgentSearchExtractTool()` and `AgentSearchRenderTool()` to `tools` once pai
 
 ## Paid mode
 
-Install the `paid` extra (`pip install "crewai-agentsearch[paid]"`) and set `AGENTSEARCH_WALLET_PRIVATE_KEY` (or `POCKET_PRIVATE_KEY`) to the private key of a **new wallet made only for this**, funded with a little USDC on Base (e.g. $1; no ETH needed). Each call costs $0.005 and is paid over x402 through the Pocket Network Agentic Portal using the official x402 Python SDK.
+Install the `paid` extra (`pip install "crewai-agentsearch[paid]"`) and set `AGENTSEARCH_WALLET_PRIVATE_KEY` (or `POCKET_PRIVATE_KEY`) to the private key of a **new wallet made only for this**, funded with a little USDC on Base (e.g. $1; no ETH needed). Since 0.3.0 each call is paid over x402 **directly to AgentSearch's own API** (`https://api.agentsearchhq.com`, USDC on Base, settled only on success) using the official x402 Python SDK: search $0.008, extract $0.007, render $0.010. $1 covers about 140 extracts. Prefer the Pocket Network Agentic Portal ($0.005 per call)? Set `AGENTSEARCH_PAYMENT_ROUTE=pocket`.
 
 `AgentSearchExtractTool` and `AgentSearchRenderTool` are always paid and need the key.
 
@@ -59,7 +59,8 @@ export AGENTSEARCH_MODE=paid   # opt in for AgentSearchTool in the default mode=
 |---|---|
 | `AGENTSEARCH_MODE` | unset (`paid` opts `mode="auto"` in to paid search; `free` forces free) |
 | `AGENTSEARCH_MAX_TOTAL_ATOMIC` | `1000000` ($1.00 per process) |
-| `AGENTSEARCH_MAX_PER_CALL_ATOMIC` | `5000` ($0.005; can only be lowered) |
+| `AGENTSEARCH_PAYMENT_ROUTE` | `direct` (AgentSearch's x402 API); `pocket` = Pocket Network Agentic Portal at $0.005/call |
+| `AGENTSEARCH_MAX_PER_CALL_ATOMIC` | `10000` on the direct route, `5000` on Pocket ($0.010 / $0.005; can only be lowered) |
 | `AGENTSEARCH_TIMEOUT_MS` | `30000` |
 | `AGENTSEARCH_EXTRACT_RENDER_FALLBACK` | unset (`1` turns on render fallback for extract, see below) |
 
@@ -67,7 +68,7 @@ Limits are checked before anything is signed. The key is never returned in tool 
 
 ### Extract to render fallback
 
-Set `AGENTSEARCH_EXTRACT_RENDER_FALLBACK=1` to make `AgentSearchExtractTool` automatically retry a URL with render when extract returns thin content (under 200 characters of text, typical for JavaScript-heavy pages). It is off by default because the render retry is a second $0.005 call (so up to $0.010 for that URL), still bounded by `AGENTSEARCH_MAX_TOTAL_ATOMIC`. You can also turn it on or off per call with the tool's `render_fallback` argument, which overrides the env var. When the fallback runs, the result includes a `render_fallback` object.
+Set `AGENTSEARCH_EXTRACT_RENDER_FALLBACK=1` to make `AgentSearchExtractTool` automatically retry a URL with render when extract returns thin content (under 200 characters of text, typical for JavaScript-heavy pages). It is off by default because the render retry is a second paid call ($0.010, so up to $0.017 for that URL), still bounded by `AGENTSEARCH_MAX_TOTAL_ATOMIC`. You can also turn it on or off per call with the tool's `render_fallback` argument, which overrides the env var. When the fallback runs, the result includes a `render_fallback` object.
 
 ## Errors
 
