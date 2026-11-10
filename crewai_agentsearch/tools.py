@@ -54,6 +54,13 @@ class AgentSearchExtractTool(BaseTool):
         return _ops.paid("extract", url=url, formats=formats, max_chars=max_chars, render_fallback=render_fallback)
 
 
+class SearchAndReadInput(BaseModel):
+    query: str = Field(description="Search query", min_length=1)
+    num_results: Optional[int] = Field(default=None, ge=1, le=5, description="How many top results to read, default 3, max 5")
+    max_chars: Optional[int] = Field(default=None, gt=0, le=20000, description="Max characters of page text per result, default 8000, max 20000")
+    render_fallback: Optional[bool] = Field(default=None, description="If extract is thin, render at most one page in the same $0.015 call")
+
+
 class AgentSearchRenderTool(BaseTool):
     name: str = "agentsearch_render"
     description: str = "Render a page in a real headless browser and return markdown/text/html/links. Use when agentsearch_extract returns empty or thin content, or for JavaScript-heavy pages (SPAs, dashboards, content loaded by scripts). Paid: $0.010 per call via AgentSearch's x402 API (needs a wallet)."
@@ -63,3 +70,19 @@ class AgentSearchRenderTool(BaseTool):
              wait_until: Optional[str] = None, wait_for_selector: Optional[str] = None, wait_ms: Optional[int] = None, **_: Any) -> str:
         return _ops.paid("render", url=url, formats=formats, max_chars=max_chars, wait_until=wait_until,
                          wait_for_selector=wait_for_selector, wait_ms=wait_ms)
+
+
+class AgentSearchSearchAndReadTool(BaseTool):
+    """Search the live web and read the top pages in one paid call ($0.015). Direct x402 only."""
+
+    name: str = "agentsearch_search_and_read"
+    description: str = (
+        "Search the live web and return the top results with each page's main text in one paid call ($0.015 USDC on Base, charged only when at least one page returns text). "
+        "Cheaper than a $0.008 search plus three $0.007 extracts ($0.029) and one payment instead of four. Default 3 results (max 5), default 8000 characters per page (max 20000). "
+        "Pass render_fallback=true to render at most one thin page in the same call. Direct x402 only — not available on Pocket. Search itself stays free by default."
+    )
+    args_schema: Type[BaseModel] = SearchAndReadInput
+
+    def _run(self, query: str, num_results: Optional[int] = None, max_chars: Optional[int] = None,
+             render_fallback: Optional[bool] = None, **_: Any) -> str:
+        return _ops.search_and_read(query, num_results=num_results, max_chars=max_chars, render_fallback=render_fallback)

@@ -66,3 +66,20 @@ def paid(op: str, **kwargs: Any) -> str:
         return c.dumps(c.call_portal(op, body))
     except Exception as e:
         return f"Error: {e}"
+
+def search_and_read(query: str, num_results: Optional[int] = None, max_chars: Optional[int] = None,
+                    render_fallback: Optional[bool] = None) -> str:
+    """Search the live web and read the top pages in one paid call ($0.015, direct x402 only)."""
+    try:
+        if not query or not str(query).strip():
+            raise c.AgentSearchError("query must not be empty")
+        body: dict[str, Any] = {"query": query}
+        if num_results is not None:
+            body["num_results"] = int(num_results)
+        if max_chars is not None:
+            body["max_chars"] = int(max_chars)
+        if render_fallback is not None:
+            body["render_fallback"] = bool(render_fallback)
+        return c.dumps(c.call_portal("search_and_read", body))
+    except Exception as e:
+        return f"Error: {e}"

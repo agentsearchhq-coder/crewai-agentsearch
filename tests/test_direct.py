@@ -12,9 +12,10 @@ from crewai_agentsearch import _client
 pytest.importorskip("x402")
 from eth_account import Account  # noqa: E402
 
-PRICES = {"search": "8000", "extract": "7000", "render": "10000"}
+PRICES = {"search": "8000", "extract": "7000", "render": "10000", "search_and_read": "15000"}
 BODIES = {"search": {"query": "q", "max_results": 3}, "extract": {"url": "https://example.com", "formats": ["markdown"], "max_chars": 500},
-          "render": {"url": "https://example.com", "formats": ["markdown"]}}
+          "render": {"url": "https://example.com", "formats": ["markdown"]},
+          "search_and_read": {"query": "q", "num_results": 3}}
 API = "https://api.agentsearchhq.com"
 _REAL_CLIENT = httpx.Client
 Err = _client.AgentSearchError
@@ -96,7 +97,7 @@ def test_old_pocket_per_call_cap_gets_hint(monkeypatch):
     assert all(c["sig"] is None for c in seen["calls"])
 
 
-@pytest.mark.parametrize("op", ["search", "extract", "render"])
+@pytest.mark.parametrize("op", ["search", "extract", "render", "search_and_read"])
 def test_direct_signs_for_agentsearch_payee(monkeypatch, op):
     seen = mock_api(monkeypatch, op)
     out = _client.call_portal(op, dict(BODIES[op]))
@@ -108,7 +109,7 @@ def test_direct_signs_for_agentsearch_payee(monkeypatch, op):
     assert out["payment"]["settled"] is True
 
 
-@pytest.mark.parametrize("over", [{"payTo": _client.PORTAL_PAYEE}, {"amount": "10001"}, {"network": "eip155:84532"},
+@pytest.mark.parametrize("over", [{"payTo": _client.PORTAL_PAYEE}, {"amount": "20001"}, {"network": "eip155:84532"},
                                   {"asset": "0x" + "11" * 20}])
 def test_direct_refuses_bad_terms(monkeypatch, over):
     seen = mock_api(monkeypatch, "extract", over)
@@ -119,7 +120,7 @@ def test_direct_refuses_bad_terms(monkeypatch, over):
 
 def test_direct_per_call_cap_can_only_lower(monkeypatch):
     monkeypatch.setenv("AGENTSEARCH_MAX_PER_CALL_ATOMIC", "999999")
-    mock_api(monkeypatch, "render", {"amount": "20000"})
+    mock_api(monkeypatch, "render", {"amount": "20001"})
     with pytest.raises(Err, match="Nothing was signed"):
         _client.call_portal("render", dict(BODIES["render"]))
 
@@ -147,3 +148,24 @@ def test_e2e_against_local_mock(monkeypatch):
     outs = [_client.call_portal(op, dict(BODIES[op])) for op in ("search", "extract", "render")]
     assert [x["payment"]["amountAtomic"] for x in outs] == ["8000", "7000", "10000"]
     assert all(x["payment"]["settled"] for x in outs)
+
+
+def test_search_and_read_is_direct_only(monkeypatch):
+    monkeypatch.setenv("AGENTSEARCH_PAYMENT_ROUTE", "pocket")
+    with pytest.raises(Err, match="own x402 API"):
+        _client.call_portal("search_and_read", dict(BODIES["search_and_read"]))
+
+
+def test_search_and_read_old_cap_needs_20000(monkeypatch):
+    monkeypatch.setenv("AGENTSEARCH_MAX_PER_CALL_ATOMIC", "10000")
+    seen = mock_api(monkeypatch, "search_and_read")
+    with pytest.raises(Err, match="to 20000"):
+        _client.call_portal("search_and_read", dict(BODIES["search_and_read"]))
+    assert all(c["sig"] is None for c in seen["calls"])
+
+
+def test_search_and_read_no_key(monkeypatch):
+    for k in _client.KEY_ENV_VARS:
+        monkeypatch.delenv(k, raising=False)
+    with pytest.raises(Err, match="No wallet is configured"):
+        _client.call_portal("search_and_read", dict(BODIES["search_and_read"]))

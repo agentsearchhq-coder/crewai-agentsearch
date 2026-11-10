@@ -33,7 +33,7 @@ Add `AgentSearchExtractTool()` and `AgentSearchRenderTool()` to `tools` once pai
 
 ## Paid mode
 
-Install the `paid` extra (`pip install "crewai-agentsearch[paid]"`) and set `AGENTSEARCH_WALLET_PRIVATE_KEY` (or `POCKET_PRIVATE_KEY`) to the private key of a **new wallet made only for this**, funded with a little USDC on Base (e.g. $1; no ETH needed). Since 0.3.0 each call is paid over x402 **directly to AgentSearch's own API** (`https://api.agentsearchhq.com`, USDC on Base, settled only on success) using the official x402 Python SDK: search $0.008, extract $0.007, render $0.010. $1 covers about 140 extracts. Prefer the Pocket Network Agentic Portal ($0.005 per call)? Set `AGENTSEARCH_PAYMENT_ROUTE=pocket`.
+Install the `paid` extra (`pip install "crewai-agentsearch[paid]"`) and set `AGENTSEARCH_WALLET_PRIVATE_KEY` (or `POCKET_PRIVATE_KEY`) to the private key of a **new wallet made only for this**, funded with a little USDC on Base (e.g. $1; no ETH needed). Since 0.3.0 each call is paid over x402 **directly to AgentSearch's own API** (`https://api.agentsearchhq.com`, USDC on Base, settled only on success) using the official x402 Python SDK: search $0.008, extract $0.007, render $0.010, search-and-read $0.015. $1 covers about 140 extracts. Prefer the Pocket Network Agentic Portal ($0.005 per call)? Set `AGENTSEARCH_PAYMENT_ROUTE=pocket`.
 
 `AgentSearchExtractTool` and `AgentSearchRenderTool` are always paid and need the key.
 
