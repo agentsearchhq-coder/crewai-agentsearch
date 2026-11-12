@@ -1,5 +1,12 @@
 # Changelog
 
+## 0.5.0 (2026-11-12)
+- **News search.** New `AgentSearchNewsTool` (`agentsearch_news_search`, $0.008): recent articles with title, URL, snippet, source and publish date (1-10, default 5); calls with no results are not charged.
+- **Screenshots.** New `AgentSearchScreenshotTool` (`agentsearch_screenshot`, $0.010): PNG or JPEG of the viewport or full page (up to 4000 px), optional mobile `viewport`. The image is saved to a file (`AGENTSEARCH_SCREENSHOT_DIR`, default a temp folder) and the tool returns its path and metadata, not base64, so it doesn't flood the model's context.
+- **Search filters** on paid search, news and search-and-read: `freshness`, `date_from`/`date_to`, `country`, `language`, `include_domains`/`exclude_domains` (up to 5). Free search ignores them; the Pocket route drops them (listed in `payment.droppedFields`).
+- **Extract options on direct:** `max_chars` (up to 50000) and `include_links` are now forwarded (0.4.0 dropped them).
+- **Lower prices:** extract $0.004 (was $0.007), search-and-read $0.009 (was $0.015). Search $0.008 and render $0.010 unchanged. News, screenshot and search-and-read are direct-only. Matches `@agentsearchhq/agentsearch-mcp` 1.8.0 and `langchain-agentsearch` 0.7.0.
+
 ## 0.4.0 (2026-11-10)
 - **Search + Read in one paid call.** New `AgentSearchSearchAndReadTool (`agentsearch_search_and_read`)` posts to `https://api.agentsearchhq.com/x402/v1/search_and_read` at **$0.015**, charged only when at least one page returns text. Default 3 results (max 5), default 8000 characters per page (max 20000); `render_fallback=true` renders at most one thin page in the same call. About 48% less than a $0.008 search plus three $0.007 extracts ($0.029), and one payment instead of four.
 - Direct-only: not on the Pocket route, not on a self-hosted base URL. A Pocket or no-wallet call refuses with nothing signed. Search itself stays free by default.

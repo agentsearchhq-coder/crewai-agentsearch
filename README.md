@@ -5,8 +5,11 @@
 | Tool | Name | Cost |
 |---|---|---|
 | `AgentSearchTool` | `agentsearch_search` | **Free** (up to 25 searches/day per IP, up to 5 results, no key). Paid and unlimited only when you opt in (see Paid mode). |
-| `AgentSearchExtractTool` | `agentsearch_extract` | $0.007/call (USDC on Base via x402 to AgentSearch) |
+| `AgentSearchNewsTool` | `agentsearch_news_search` | $0.008/call (recent news with publish dates; no results, no charge) |
+| `AgentSearchExtractTool` | `agentsearch_extract` | $0.004/call (USDC on Base via x402 to AgentSearch) |
 | `AgentSearchRenderTool` | `agentsearch_render` | $0.010/call (headless browser for JS pages) |
+| `AgentSearchScreenshotTool` | `agentsearch_screenshot` | $0.010/call (PNG/JPEG saved to a local file; path returned) |
+| `AgentSearchSearchAndReadTool` | `agentsearch_search_and_read` | $0.009/call (search plus the top pages' text in one payment) |
 
 ## Install
 
@@ -29,13 +32,26 @@ task = Task(description="What changed in the latest CrewAI release?", expected_o
 print(Crew(agents=[researcher], tasks=[task]).kickoff())
 ```
 
-Add `AgentSearchExtractTool()` and `AgentSearchRenderTool()` to `tools` once paid mode is set up.
+Add `AgentSearchNewsTool()`, `AgentSearchExtractTool()`, `AgentSearchRenderTool()`, `AgentSearchScreenshotTool()` and `AgentSearchSearchAndReadTool()` to `tools` once paid mode is set up.
+
+### Filters, news and screenshots (0.5.0)
+
+```python
+from crewai_agentsearch import AgentSearchNewsTool, AgentSearchScreenshotTool, AgentSearchTool
+
+AgentSearchTool(mode="paid").run(query="x402 payments", freshness="week", include_domains=["github.com"])
+AgentSearchNewsTool().run(query="Base network USDC", freshness="day", country="us", max_results=8)
+AgentSearchScreenshotTool().run(url="https://example.com", viewport={"width": 390, "height": 844})
+# -> JSON with screenshot.path (image file) instead of base64, so the image never floods the model context
+```
+
+Paid search, news and search-and-read accept `freshness` (day/week/month/year), `date_from`/`date_to` (YYYY-MM-DD), `country`, `language`, and up to 5 `include_domains`/`exclude_domains`. Free search ignores filters. Extract accepts `max_chars` (up to 50000) and `include_links`. Screenshots are saved in `AGENTSEARCH_SCREENSHOT_DIR` (default: a temp folder).
 
 ## Paid mode
 
-Install the `paid` extra (`pip install "crewai-agentsearch[paid]"`) and set `AGENTSEARCH_WALLET_PRIVATE_KEY` (or `POCKET_PRIVATE_KEY`) to the private key of a **new wallet made only for this**, funded with a little USDC on Base (e.g. $1; no ETH needed). Since 0.3.0 each call is paid over x402 **directly to AgentSearch's own API** (`https://api.agentsearchhq.com`, USDC on Base, settled only on success) using the official x402 Python SDK: search $0.008, extract $0.007, render $0.010, search-and-read $0.015. $1 covers about 140 extracts. Prefer the Pocket Network Agentic Portal ($0.005 per call)? Set `AGENTSEARCH_PAYMENT_ROUTE=pocket`.
+Install the `paid` extra (`pip install "crewai-agentsearch[paid]"`) and set `AGENTSEARCH_WALLET_PRIVATE_KEY` (or `POCKET_PRIVATE_KEY`) to the private key of a **new wallet made only for this**, funded with a little USDC on Base (e.g. $1; no ETH needed). Since 0.3.0 each call is paid over x402 **directly to AgentSearch's own API** (`https://api.agentsearchhq.com`, USDC on Base, settled only on success) using the official x402 Python SDK: search $0.008, news $0.008, extract $0.004, render $0.010, screenshot $0.010, search-and-read $0.009. $1 covers about 250 extracts or 111 search-and-read calls. Prefer the Pocket Network Agentic Portal ($0.005 per call)? Set `AGENTSEARCH_PAYMENT_ROUTE=pocket`.
 
-`AgentSearchExtractTool` and `AgentSearchRenderTool` are always paid and need the key.
+News, extract, render, screenshot and search-and-read are always paid and need the key. News, screenshot and search-and-read exist only on the direct route (not on Pocket).
 
 **Paid search is opt-in (changed in 0.2.1).** Setting a wallet key does *not* make search paid. `AgentSearchTool` (default `mode="auto"`) stays on free search until you opt in in one of two ways:
 
@@ -60,7 +76,8 @@ export AGENTSEARCH_MODE=paid   # opt in for AgentSearchTool in the default mode=
 | `AGENTSEARCH_MODE` | unset (`paid` opts `mode="auto"` in to paid search; `free` forces free) |
 | `AGENTSEARCH_MAX_TOTAL_ATOMIC` | `1000000` ($1.00 per process) |
 | `AGENTSEARCH_PAYMENT_ROUTE` | `direct` (AgentSearch's x402 API); `pocket` = Pocket Network Agentic Portal at $0.005/call |
-| `AGENTSEARCH_MAX_PER_CALL_ATOMIC` | `10000` on the direct route, `5000` on Pocket ($0.010 / $0.005; can only be lowered) |
+| `AGENTSEARCH_MAX_PER_CALL_ATOMIC` | `20000` on the direct route, `5000` on Pocket ($0.020 / $0.005; can only be lowered) |
+| `AGENTSEARCH_SCREENSHOT_DIR` | a temp folder (`agentsearch-screenshots`) |
 | `AGENTSEARCH_TIMEOUT_MS` | `30000` |
 | `AGENTSEARCH_EXTRACT_RENDER_FALLBACK` | unset (`1` turns on render fallback for extract, see below) |
 

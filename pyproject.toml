@@ -4,8 +4,8 @@ build-backend = "hatchling.build"
 
 [project]
 name = "crewai-agentsearch"
-version = "0.4.0"
-description = "CrewAI tools for AgentSearch: free live web search, plus pay-per-call extract and JS render (USDC on Base via x402, paid directly to AgentSearch)"
+version = "0.5.0"
+description = "CrewAI tools for AgentSearch: free live web search, plus pay-per-call news, extract, JS render, screenshots and search-and-read (USDC on Base via x402, paid directly to AgentSearch)"
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.10"
