@@ -13,10 +13,10 @@ pytest.importorskip("x402")
 from eth_account import Account  # noqa: E402
 
 PRICES = {"search": "8000", "extract": "4000", "render": "10000", "search_and_read": "9000", "news": "8000", "screenshot": "10000"}
-BODIES = {"search": {"query": "q", "max_results": 3}, "extract": {"url": "https://example.com", "formats": ["markdown"], "max_chars": 500},
+BODIES = {"search": {"query": "qq", "max_results": 3}, "extract": {"url": "https://example.com", "formats": ["markdown"], "max_chars": 500},
           "render": {"url": "https://example.com", "formats": ["markdown"]},
-          "search_and_read": {"query": "q", "num_results": 3, "freshness": "week"},
-          "news": {"query": "q", "max_results": 7, "freshness": "day", "include_domains": ["reuters.com"]},
+          "search_and_read": {"query": "qq", "num_results": 3, "freshness": "week"},
+          "news": {"query": "qq", "max_results": 7, "freshness": "day", "include_domains": ["reuters.com"]},
           "screenshot": {"url": "https://example.com", "format": "jpeg", "full_page": True, "viewport": {"width": 390, "height": 844}}}
 API = "https://api.agentsearchhq.com"
 _REAL_CLIENT = httpx.Client
@@ -201,8 +201,8 @@ def test_filters_dropped_on_pocket(monkeypatch):
 
     monkeypatch.setattr(_client.httpx, "Client", lambda **kw: _REAL_CLIENT(transport=httpx.MockTransport(handler)))
     with pytest.raises(Err):
-        _client.call_portal("search", {"query": "q", "freshness": "day", "country": "us"})
-    assert seen["body"] == {"query": "q"}
+        _client.call_portal("search", {"query": "qq", "freshness": "day", "country": "us"})
+    assert seen["body"] == {"query": "qq"}
 
 
 def test_screenshot_tool_saves_file_not_base64(monkeypatch, tmp_path):
@@ -231,5 +231,5 @@ def test_news_and_screenshot_need_wallet(monkeypatch):
     for k in _client.KEY_ENV_VARS:
         monkeypatch.delenv(k, raising=False)
     monkeypatch.setattr(_client.httpx, "Client", lambda **kw: pytest.fail("no network call expected"))
-    assert "No wallet is configured" in AgentSearchNewsTool().run(query="x")
+    assert "No wallet is configured" in AgentSearchNewsTool().run(query="xx")
     assert "No wallet is configured" in AgentSearchScreenshotTool().run(url="https://example.com")

@@ -1,5 +1,9 @@
 # Changelog
 
+## 0.5.1 (2026-11-14)
+- **Short-query guard.** Search, news and search-and-read now reject queries shorter than 2 characters (after trimming) before any network request, returning an `Error: ... rewrite the query (at least 2 characters) ...` string; nothing is sent or charged. Queries are trimmed before sending.
+- **Relay input errors are final.** A 4xx from the free relay (other than 408/429) now tells the agent to fix the query instead of retrying it unchanged (the relay marks these `retryable:false`). Matches `langchain-agentsearch` 0.7.1 and `@agentsearchhq/agentsearch-mcp` 1.8.1.
+
 ## 0.5.0 (2026-11-12)
 - **News search.** New `AgentSearchNewsTool` (`agentsearch_news_search`, $0.008): recent articles with title, URL, snippet, source and publish date (1-10, default 5); calls with no results are not charged.
 - **Screenshots.** New `AgentSearchScreenshotTool` (`agentsearch_screenshot`, $0.010): PNG or JPEG of the viewport or full page (up to 4000 px), optional mobile `viewport`. The image is saved to a file (`AGENTSEARCH_SCREENSHOT_DIR`, default a temp folder) and the tool returns its path and metadata, not base64, so it doesn't flood the model's context.

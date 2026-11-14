@@ -80,6 +80,21 @@ class AgentSearchError(Exception):
         self.status = status
 
 
+MIN_QUERY_CHARS = 2
+
+
+def check_query(query: Any) -> str:
+    """Trim a search query and reject empty or too-short ones before any network request (nothing is sent or charged)."""
+    q = str(query).strip() if query is not None else ""
+    if not q:
+        raise AgentSearchError("query must not be empty: pass a non-empty search string. Nothing was sent or charged.")
+    if len(q) < MIN_QUERY_CHARS:
+        raise AgentSearchError(f"query {q!r} is too short (minimum {MIN_QUERY_CHARS} characters): rewrite the query "
+                               "(at least 2 characters) as a real search, e.g. a few keywords. Don't retry it unchanged. "
+                               "Nothing was sent or charged.")
+    return q
+
+
 def payment_route() -> str:
     """'direct' (default since 0.3.0) or 'pocket'. AGENTSEARCH_PAYMENT_ROUTE wins; AGENTSEARCH_X402_DIRECT=0
     also selects 'pocket'. Any other route value raises (nothing is signed)."""
@@ -148,7 +163,9 @@ def free_search(query: str, max_results: Optional[int] = None, client: Optional[
     if r.status_code == 429:
         raise AgentSearchError(FREE_LIMIT_MESSAGE, 429)
     if r.status_code >= 400:
-        raise AgentSearchError(f"AgentSearch relay HTTP {r.status_code}: {r.text[:500]}", r.status_code)
+        hint = (" This is an input error: fix the query instead of retrying it unchanged."
+                if 400 <= r.status_code < 500 and r.status_code != 408 else "")
+        raise AgentSearchError(f"AgentSearch relay HTTP {r.status_code}: {r.text[:500]}{hint}", r.status_code)
     try:
         return _strip_provider(r.json())
     except ValueError:

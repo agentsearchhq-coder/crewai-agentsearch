@@ -49,8 +49,7 @@ def _filters(kw: dict[str, Any]) -> dict[str, Any]:
 
 def search(query: str, max_results: Optional[int] = None, mode: str = "auto", **filters: Any) -> str:
     try:
-        if not query or not str(query).strip():
-            raise c.AgentSearchError("query must not be empty")
+        query = c.check_query(query)
         if max_results is not None:
             max_results = max(1, min(int(max_results), 5))
         if resolve_search_mode(mode) == "paid":
@@ -82,8 +81,7 @@ def search_and_read(query: str, num_results: Optional[int] = None, max_chars: Op
                     render_fallback: Optional[bool] = None, **filters: Any) -> str:
     """Search the live web and read the top pages in one paid call ($0.009, direct x402 only)."""
     try:
-        if not query or not str(query).strip():
-            raise c.AgentSearchError("query must not be empty")
+        query = c.check_query(query)
         body: dict[str, Any] = {"query": query, **_filters(filters)}
         if num_results is not None:
             body["num_results"] = int(num_results)
@@ -99,8 +97,7 @@ def search_and_read(query: str, num_results: Optional[int] = None, max_chars: Op
 def news(query: str, max_results: Optional[int] = None, **filters: Any) -> str:
     """Recent news articles in one paid call ($0.008, direct x402 only; no results, no charge)."""
     try:
-        if not query or not str(query).strip():
-            raise c.AgentSearchError("query must not be empty")
+        query = c.check_query(query)
         if not c.has_wallet_key():
             raise c.AgentSearchError(c.paid_only_message("agentsearch_news_search"))
         body: dict[str, Any] = {"query": query, **_filters(filters)}
