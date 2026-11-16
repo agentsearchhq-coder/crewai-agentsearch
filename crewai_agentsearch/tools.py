@@ -49,7 +49,7 @@ class ExtractInput(BaseModel):
     formats: Optional[list[str]] = Field(default=None, description='e.g. ["markdown"]')
     max_chars: Optional[int] = Field(default=None, gt=0, le=50000, description="Max characters of page text, up to 50000")
     include_links: Optional[bool] = Field(default=None, description="Also return the page's links")
-    render_fallback: Optional[bool] = Field(default=None, description="If extract returns thin content, retry with render (a second paid call, $0.010)")
+    render_fallback: Optional[bool] = Field(default=None, description="If extract returns thin content, retry with render (a second paid call, $0.005)")
 
 
 class RenderInput(BaseModel):
@@ -69,7 +69,7 @@ class AgentSearchTool(BaseTool):
 
     name: str = "agentsearch_search"
     description: str = ("Live web search. Returns up to 5 ranked results (title, url, content). Use for current facts or finding URLs. "
-                        "Free by default; paid mode ($0.008) also honors freshness/date range, country, language and include/exclude domain filters. "
+                        "Free by default; paid mode ($0.003) also honors freshness/date range, country, language and include/exclude domain filters. "
                         "For recent news use agentsearch_news_search.")
     args_schema: Type[BaseModel] = SearchInput
     mode: Literal["auto", "free", "paid"] = "auto"
@@ -80,7 +80,7 @@ class AgentSearchTool(BaseTool):
 
 class AgentSearchExtractTool(BaseTool):
     name: str = "agentsearch_extract"
-    description: str = "Fetch a URL and return its main content as clean text/markdown. Fast and best for articles, docs and static pages. If the result is empty or thin (JavaScript-heavy page, SPA, app shell), call agentsearch_render on the same URL, or pass render_fallback=true to do that automatically (a second paid call). Paid: $0.004 per call via AgentSearch's x402 API (needs a wallet)."
+    description: str = "Fetch a URL and return its main content as clean text/markdown. Fast and best for articles, docs and static pages. If the result is empty or thin (JavaScript-heavy page, SPA, app shell), call agentsearch_render on the same URL, or pass render_fallback=true to do that automatically (a second paid call). Paid: $0.002 per call via AgentSearch's x402 API (needs a wallet)."
     args_schema: Type[BaseModel] = ExtractInput
 
     def _run(self, url: str, formats: Optional[list[str]] = None, max_chars: Optional[int] = None,
@@ -93,12 +93,12 @@ class SearchAndReadInput(_Filters):
     query: str = Field(description="Search query", min_length=1)
     num_results: Optional[int] = Field(default=None, ge=1, le=5, description="How many top results to read, default 3, max 5")
     max_chars: Optional[int] = Field(default=None, gt=0, le=20000, description="Max characters of page text per result, default 8000, max 20000")
-    render_fallback: Optional[bool] = Field(default=None, description="If extract is thin, render at most one page in the same $0.009 call")
+    render_fallback: Optional[bool] = Field(default=None, description="If extract is thin, render at most one page in the same $0.005 call")
 
 
 class AgentSearchRenderTool(BaseTool):
     name: str = "agentsearch_render"
-    description: str = "Render a page in a real headless browser and return markdown/text/html/links. Use when agentsearch_extract returns empty or thin content, or for JavaScript-heavy pages (SPAs, dashboards, content loaded by scripts). Paid: $0.010 per call via AgentSearch's x402 API (needs a wallet)."
+    description: str = "Render a page in a real headless browser and return markdown/text/html/links. Use when agentsearch_extract returns empty or thin content, or for JavaScript-heavy pages (SPAs, dashboards, content loaded by scripts). Paid: $0.005 per call via AgentSearch's x402 API (needs a wallet)."
     args_schema: Type[BaseModel] = RenderInput
 
     def _run(self, url: str, formats: Optional[list[str]] = None, max_chars: Optional[int] = None,
@@ -108,12 +108,12 @@ class AgentSearchRenderTool(BaseTool):
 
 
 class AgentSearchSearchAndReadTool(BaseTool):
-    """Search the live web and read the top pages in one paid call ($0.009). Direct x402 only."""
+    """Search the live web and read the top pages in one paid call ($0.005). Direct x402 only."""
 
     name: str = "agentsearch_search_and_read"
     description: str = (
-        "Search the live web and return the top results with each page's main text in one paid call ($0.009 USDC on Base, charged only when at least one page returns text). "
-        "Cheaper than a $0.008 search plus three $0.004 extracts ($0.020) and one payment instead of four. Optional freshness, dates, country, language and domain filters. Default 3 results (max 5), default 8000 characters per page (max 20000). "
+        "Search the live web and return the top results with each page's main text in one paid call ($0.005 USDC on Base, charged only when at least one page returns text). "
+        "Cheaper than a $0.003 search plus three $0.002 extracts ($0.009) and one payment instead of four. Optional freshness, dates, country, language and domain filters. Default 3 results (max 5), default 8000 characters per page (max 20000). "
         "Pass render_fallback=true to render at most one thin page in the same call. Direct x402 only — not available on Pocket. Search itself stays free by default."
     )
     args_schema: Type[BaseModel] = SearchAndReadInput
@@ -124,14 +124,14 @@ class AgentSearchSearchAndReadTool(BaseTool):
 
 
 class AgentSearchNewsTool(BaseTool):
-    """Recent news articles in one paid call on AgentSearch's direct x402 API ($0.008; no results, no charge). Direct only."""
+    """Recent news articles in one paid call on AgentSearch's direct x402 API ($0.003; no results, no charge). Direct only."""
 
     name: str = "agentsearch_news_search"
     description: str = (
         "Search recent news articles and return title, URL, snippet, source domain and publish date for each (1-10, default 5). "
         "Use for current events, company or product news, and anything where recency matters; optional freshness (day/week/month/year) "
         "or date_from/date_to, country, language, include/exclude domains. To read an article in full, pass its URL to agentsearch_extract. "
-        "Paid: $0.008 per call (USDC on Base via x402 to AgentSearch's own API; calls with no results are not charged). Needs a wallet."
+        "Paid: $0.003 per call (USDC on Base via x402 to AgentSearch's own API; calls with no results are not charged). Needs a wallet."
     )
     args_schema: Type[BaseModel] = NewsInput
 
@@ -140,7 +140,7 @@ class AgentSearchNewsTool(BaseTool):
 
 
 class AgentSearchScreenshotTool(BaseTool):
-    """Website screenshot in one paid call on AgentSearch's direct x402 API ($0.010). Direct only.
+    """Website screenshot in one paid call on AgentSearch's direct x402 API ($0.004). Direct only.
     The image is saved to a file (AGENTSEARCH_SCREENSHOT_DIR, default a temp folder); the tool output has its path, not the bytes."""
 
     name: str = "agentsearch_screenshot"
@@ -148,7 +148,7 @@ class AgentSearchScreenshotTool(BaseTool):
         "Load a public URL in a real headless browser and capture a PNG or JPEG screenshot of the viewport or the full page "
         "(up to 4000 px tall), plus title, final URL and HTTP status. Use for visual checks, layout or UI questions, and pages "
         "where the look matters; for page text use agentsearch_extract. Set viewport (e.g. 390x844) for mobile. "
-        "The image is saved to a local file and its path is returned. Paid: $0.010 per call (USDC on Base via x402 to AgentSearch's own API). Needs a wallet."
+        "The image is saved to a local file and its path is returned. Paid: $0.004 per call (USDC on Base via x402 to AgentSearch's own API). Needs a wallet."
     )
     args_schema: Type[BaseModel] = ScreenshotInput
 

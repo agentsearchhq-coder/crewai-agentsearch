@@ -79,7 +79,7 @@ def paid(op: str, **kwargs: Any) -> str:
 
 def search_and_read(query: str, num_results: Optional[int] = None, max_chars: Optional[int] = None,
                     render_fallback: Optional[bool] = None, **filters: Any) -> str:
-    """Search the live web and read the top pages in one paid call ($0.009, direct x402 only)."""
+    """Search the live web and read the top pages in one paid call ($0.005, direct x402 only)."""
     try:
         query = c.check_query(query)
         body: dict[str, Any] = {"query": query, **_filters(filters)}
@@ -95,7 +95,7 @@ def search_and_read(query: str, num_results: Optional[int] = None, max_chars: Op
 
 
 def news(query: str, max_results: Optional[int] = None, **filters: Any) -> str:
-    """Recent news articles in one paid call ($0.008, direct x402 only; no results, no charge)."""
+    """Recent news articles in one paid call ($0.003, direct x402 only; no results, no charge)."""
     try:
         query = c.check_query(query)
         if not c.has_wallet_key():
@@ -116,7 +116,7 @@ def _shot_dir() -> str:
 
 def screenshot(url: str, format: Optional[str] = None, full_page: Optional[bool] = None,
                viewport: Optional[dict[str, int]] = None) -> str:
-    """Website screenshot in one paid call ($0.010, direct x402 only).
+    """Website screenshot in one paid call ($0.004, direct x402 only).
 
     The image is saved to a file (AGENTSEARCH_SCREENSHOT_DIR, default a temp folder) and the returned JSON holds
     its path plus metadata, not the base64 bytes, so the image does not flood the model's context."""

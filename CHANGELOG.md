@@ -1,5 +1,8 @@
 # Changelog
 
+## 0.5.2 (2026-11-15)
+- Direct x402 list prices now match the live API (approved 2026-11-15): search and news $0.003, extract $0.002, render $0.005, screenshot $0.004, search_and_read $0.005. Runtime price constants, tool text, docs and tests updated. Pocket route remains $0.005. The per-call ceiling stays $0.020.
+
 ## 0.5.1 (2026-11-14)
 - **Short-query guard.** Search, news and search-and-read now reject queries shorter than 2 characters (after trimming) before any network request, returning an `Error: ... rewrite the query (at least 2 characters) ...` string; nothing is sent or charged. Queries are trimmed before sending.
 - **Relay input errors are final.** A 4xx from the free relay (other than 408/429) now tells the agent to fix the query instead of retrying it unchanged (the relay marks these `retryable:false`). Matches `langchain-agentsearch` 0.7.1 and `@agentsearchhq/agentsearch-mcp` 1.8.1.

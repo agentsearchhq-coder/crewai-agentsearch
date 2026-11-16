@@ -12,7 +12,7 @@ from crewai_agentsearch import _client
 pytest.importorskip("x402")
 from eth_account import Account  # noqa: E402
 
-PRICES = {"search": "8000", "extract": "4000", "render": "10000", "search_and_read": "9000", "news": "8000", "screenshot": "10000"}
+PRICES = {"search": "3000", "extract": "2000", "render": "5000", "search_and_read": "5000", "news": "3000", "screenshot": "4000"}
 BODIES = {"search": {"query": "qq", "max_results": 3}, "extract": {"url": "https://example.com", "formats": ["markdown"], "max_chars": 500},
           "render": {"url": "https://example.com", "formats": ["markdown"]},
           "search_and_read": {"query": "qq", "num_results": 3, "freshness": "week"},
@@ -92,7 +92,7 @@ def test_invalid_route_refuses(monkeypatch):
 
 
 def test_old_pocket_per_call_cap_gets_hint(monkeypatch):
-    monkeypatch.setenv("AGENTSEARCH_MAX_PER_CALL_ATOMIC", "5000")
+    monkeypatch.setenv("AGENTSEARCH_MAX_PER_CALL_ATOMIC", "4000")
     seen = mock_api(monkeypatch, "render")
     with pytest.raises(Err, match="AGENTSEARCH_PAYMENT_ROUTE=pocket"):
         _client.call_portal("render", dict(BODIES["render"]))
@@ -138,7 +138,7 @@ def test_no_wallet_message_quotes_direct_prices(monkeypatch):
         monkeypatch.delenv(k, raising=False)
     with pytest.raises(Err) as e:
         _client.call_portal("extract", dict(BODIES["extract"]))
-    assert "$0.004" in str(e.value) and "AGENTSEARCH_PAYMENT_ROUTE=pocket" in str(e.value)
+    assert "$0.002" in str(e.value) and "AGENTSEARCH_PAYMENT_ROUTE=pocket" in str(e.value)
 
 
 MOCK = os.environ.get("AGENTSEARCH_TEST_DIRECT_MOCK")  # e.g. http://127.0.0.1:8397
@@ -148,7 +148,7 @@ MOCK = os.environ.get("AGENTSEARCH_TEST_DIRECT_MOCK")  # e.g. http://127.0.0.1:8
 def test_e2e_against_local_mock(monkeypatch):
     monkeypatch.setenv("AGENTSEARCH_X402_DIRECT_URL", MOCK)
     outs = [_client.call_portal(op, dict(BODIES[op])) for op in ("search", "extract", "render")]
-    assert [x["payment"]["amountAtomic"] for x in outs] == ["8000", "4000", "10000"]
+    assert [x["payment"]["amountAtomic"] for x in outs] == ["3000", "2000", "5000"]
     assert all(x["payment"]["settled"] for x in outs)
 
 
@@ -159,7 +159,7 @@ def test_search_and_read_is_direct_only(monkeypatch):
 
 
 def test_search_and_read_low_cap_needs_20000(monkeypatch):
-    monkeypatch.setenv("AGENTSEARCH_MAX_PER_CALL_ATOMIC", "8000")
+    monkeypatch.setenv("AGENTSEARCH_MAX_PER_CALL_ATOMIC", "4000")
     seen = mock_api(monkeypatch, "search_and_read")
     with pytest.raises(Err, match="to 20000"):
         _client.call_portal("search_and_read", dict(BODIES["search_and_read"]))
@@ -211,7 +211,7 @@ def test_screenshot_tool_saves_file_not_base64(monkeypatch, tmp_path):
     png = b"\x89PNG\r\n\x1a\nfake"
     monkeypatch.setattr(_client, "call_portal", lambda op, body, client=None: {
         "url": body["url"], "screenshot": {"format": "png", "width": 1280, "height": 800, "bytes": len(png),
-                                           "base64": base64.b64encode(png).decode()}, "payment": {"amountUsd": "$0.010"}})
+                                           "base64": base64.b64encode(png).decode()}, "payment": {"amountUsd": "$0.004"}})
     out = json.loads(AgentSearchScreenshotTool().run(url="https://example.com"))
     path = out["screenshot"]["path"]
     assert path.startswith(str(tmp_path)) and path.endswith(".png") and open(path, "rb").read() == png

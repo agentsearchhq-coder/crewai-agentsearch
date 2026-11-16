@@ -42,7 +42,7 @@ ROUTE_ENV_VAR = "AGENTSEARCH_PAYMENT_ROUTE"
 DIRECT_ENV_VAR = "AGENTSEARCH_X402_DIRECT"  # =0/false/no/off also selects pocket (same switch as langchain-agentsearch)
 DEFAULT_DIRECT_URL = "https://api.agentsearchhq.com"
 DIRECT_PAYEE = "0xC49B157887e51c21CB655f39CF65D6a4c2a4C337"
-DIRECT_MAX_PER_CALL_ATOMIC = 20_000  # $0.020 hard ceiling (search $0.008, news $0.008, extract $0.004, render $0.010, screenshot $0.010, search_and_read $0.009)
+DIRECT_MAX_PER_CALL_ATOMIC = 20_000  # $0.020 hard ceiling (search $0.003, news $0.003, extract $0.002, render $0.005, screenshot $0.004, search_and_read $0.005)
 # 0.5.0: optional search filters (direct only) on search, news and search_and_read.
 FILTER_KEYS = ("freshness", "date_from", "date_to", "country", "language", "include_domains", "exclude_domains")
 DIRECT_FIELDS = {"search": ("query", "max_results") + FILTER_KEYS, "news": ("query", "max_results") + FILTER_KEYS,
@@ -50,17 +50,17 @@ DIRECT_FIELDS = {"search": ("query", "max_results") + FILTER_KEYS, "news": ("que
                  "screenshot": ("url", "format", "full_page", "viewport"),
                  "search_and_read": ("query", "num_results", "max_results", "max_chars", "render_fallback") + FILTER_KEYS}
 # Tools that exist only on AgentSearch's own x402 API (not on Pocket, not on the free relay).
-DIRECT_ONLY = {"search_and_read": "$0.009 per call when at least one page returns text",
-               "news": "$0.008 per call", "screenshot": "$0.010 per call"}
-PRICES_SENTENCE = ("paid per call in USDC on Base via x402 to AgentSearch's own API (search $0.008, news $0.008, extract $0.004, "
-                   "render $0.010, screenshot $0.010, search_and_read $0.009; $1 covers about 250 extracts or 111 search-and-read calls; failed calls are not charged), or $0.005 per call through "
+DIRECT_ONLY = {"search_and_read": "$0.005 per call when at least one page returns text",
+               "news": "$0.003 per call", "screenshot": "$0.004 per call"}
+PRICES_SENTENCE = ("paid per call in USDC on Base via x402 to AgentSearch's own API (search $0.003, news $0.003, extract $0.002, "
+                   "render $0.005, screenshot $0.004, search_and_read $0.005; $1 covers about 500 extracts or 200 search-and-read calls; failed calls are not charged), or $0.005 per call through "
                    "the Pocket Network portal with AGENTSEARCH_PAYMENT_ROUTE=pocket")
 DOCS = "https://agentsearchhq.com/?utm_source=crewai-agentsearch&utm_medium=package"
 
 FREE_LIMIT_MESSAGE = (
     f"Free search limit reached (up to {FREE_RELAY_DAILY_LIMIT} searches/day per IP; resets daily). "
     "For unlimited search plus extract/render, set AGENTSEARCH_WALLET_PRIVATE_KEY to the key of a NEW wallet "
-    "funded with a little USDC on Base (search $0.008, extract $0.004, render $0.010 per call via x402 to AgentSearch; capped by AGENTSEARCH_MAX_TOTAL_ATOMIC, "
+    "funded with a little USDC on Base (search $0.003, extract $0.002, render $0.005 per call via x402 to AgentSearch; capped by AGENTSEARCH_MAX_TOTAL_ATOMIC, "
     f"default $1.00), install crewai-agentsearch[paid], and opt in to paid search with mode='paid' or "
     f"AGENTSEARCH_MODE=paid. Docs: {DOCS}"
 )
@@ -338,7 +338,7 @@ def call_portal(op: str, body: dict[str, Any], client: Optional[httpx.Client] = 
                 if direct and per_call < hard_cap and ceiling == per_call:
                     raise AgentSearchError(
                         f"{e} Your per-call cap (AGENTSEARCH_MAX_PER_CALL_ATOMIC={per_call}) is below this route's price; since 0.3.0 "
-                        "paid calls go to AgentSearch's own x402 API (search $0.008, news $0.008, extract $0.004, render $0.010, screenshot $0.010, search_and_read $0.009). Raise the cap "
+                        "paid calls go to AgentSearch's own x402 API (search $0.003, news $0.003, extract $0.002, render $0.005, screenshot $0.004, search_and_read $0.005). Raise the cap "
                         "to 20000, remove it, or set AGENTSEARCH_PAYMENT_ROUTE=pocket for the $0.005 Pocket route (search, extract and render only)."
                     ) from None
                 raise
@@ -415,7 +415,7 @@ def fallback_enabled(flag: Optional[bool]) -> bool:
 def extract_with_fallback(body: dict[str, Any], render_fallback: Optional[bool] = None,
                           client: Optional[httpx.Client] = None) -> dict[str, Any]:
     """Extract; if the result is thin (< THIN_CHARS of text) and fallback is on, render the same URL.
-    Off by default because render is a second paid call ($0.010 direct) (still bounded by the session cap)."""
+    Off by default because render is a second paid call ($0.005 direct) (still bounded by the session cap)."""
     out = call_portal("extract", body, client)
     if not fallback_enabled(render_fallback) or _text_len(out) >= THIN_CHARS:
         return out
