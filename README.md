@@ -5,10 +5,10 @@
 | Tool | Name | Cost |
 |---|---|---|
 | `AgentSearchTool` | `agentsearch_search` | **Free** (up to 25 searches/day per IP, up to 5 results, no key). Paid and unlimited only when you opt in (see Paid mode). |
-| `AgentSearchNewsTool` | `agentsearch_news_search` | $0.005/call (recent news with publish dates; no results, no charge) |
+| `AgentSearchNewsTool` | `agentsearch_news_search` | $0.003/call (recent news with publish dates; no results, no charge) |
 | `AgentSearchExtractTool` | `agentsearch_extract` | $0.002/call (USDC on Base via x402 to AgentSearch) |
 | `AgentSearchRenderTool` | `agentsearch_render` | $0.005/call (headless browser for JS pages) |
-| `AgentSearchScreenshotTool` | `agentsearch_screenshot` | $0.005/call (PNG/JPEG saved to a local file; path returned) |
+| `AgentSearchScreenshotTool` | `agentsearch_screenshot` | $0.004/call (PNG/JPEG saved to a local file; path returned) |
 | `AgentSearchSearchAndReadTool` | `agentsearch_search_and_read` | $0.005/call (search plus the top pages' text in one payment) |
 
 ## Install
