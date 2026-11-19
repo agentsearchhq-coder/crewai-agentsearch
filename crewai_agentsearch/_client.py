@@ -58,6 +58,7 @@ DOCS = "https://agentsearchhq.com/?utm_source=crewai-agentsearch&utm_medium=pack
 
 FREE_LIMIT_MESSAGE = (
     f"Free search limit reached (up to {FREE_RELAY_DAILY_LIMIT} searches/day per IP; resets daily). "
+    "Add a wallet key to never get blocked: fund about $1 of USDC on Base (no ETH, no account), wallet setup takes about 2 minutes: https://agentsearchhq.com/wallet-setup?utm_source=crewai-agentsearch&utm_medium=package-error . "
     "For unlimited search plus extract/render, set AGENTSEARCH_WALLET_PRIVATE_KEY to the key of a NEW wallet "
     "funded with a little USDC on Base (search $0.003, extract $0.002, render $0.005 per call via x402 to AgentSearch; capped by AGENTSEARCH_MAX_TOTAL_ATOMIC, "
     f"default $1.00; or AGENTSEARCH_WALLET_FILE=agentcash to reuse an AgentCash wallet) and install crewai-agentsearch[paid]: "
