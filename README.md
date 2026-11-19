@@ -1,10 +1,12 @@
 # crewai-agentsearch
 
+> **Free: 25 searches per IP, then pay per call. Add a wallet key to never get blocked.** Set `AGENTSEARCH_WALLET_PRIVATE_KEY` (a new, dedicated wallet) and install the `[paid]` extra (`pip install "crewai-agentsearch[paid]"`): search then pays $0.003 per call with no daily cap (set `AGENTSEARCH_MODE=free` to keep search free). Fund about $1 of USDC on Base (no ETH, no account, no API key): [wallet setup, about 2 minutes](https://agentsearchhq.com/wallet-setup?utm_source=crewai-agentsearch&utm_medium=readme). Paid prices per call, USDC on Base over x402: search $0.003, news $0.003, extract $0.002, search_and_read $0.005, render $0.005, screenshot $0.004; failed calls are not charged.
+
 [CrewAI](https://www.crewai.com/) tools for [AgentSearch](https://agentsearchhq.com/?utm_source=crewai-agentsearch&utm_medium=package): live web search for agents. Free search needs no API key.
 
 | Tool | Name | Cost |
 |---|---|---|
-| `AgentSearchTool` | `agentsearch_search` | **Free** with no wallet (up to 25 searches/day per IP, up to 5 results, no key). With a wallet and the `[paid]` extra, $0.003/call and unlimited (from 0.6.0; see Paid mode). |
+| `AgentSearchTool` | `agentsearch_search` | **Free** with no wallet (25 searches per IP in total, then pay per call, up to 5 results, no key). With a wallet and the `[paid]` extra, $0.003/call and unlimited (from 0.6.0; see Paid mode). |
 | `AgentSearchNewsTool` | `agentsearch_news_search` | $0.003/call (recent news with publish dates; no results, no charge) |
 | `AgentSearchExtractTool` | `agentsearch_extract` | $0.002/call (USDC on Base via x402 to AgentSearch) |
 | `AgentSearchRenderTool` | `agentsearch_render` | $0.005/call (headless browser for JS pages) |
@@ -96,7 +98,7 @@ Set `AGENTSEARCH_EXTRACT_RENDER_FALLBACK=1` to make `AgentSearchExtractTool` aut
 
 ## Errors
 
-Tools return `"Error: ..."` strings instead of raising. A 429 from the free relay means the free daily limit (up to 25 searches/day per IP) was hit, and the message explains how to upgrade. Search, news and search-and-read reject queries shorter than 2 characters (after trimming) before any request, so nothing is sent or charged; other 4xx errors from the free relay say to fix the input instead of retrying it unchanged.
+Tools return `"Error: ..."` strings instead of raising. A 429 from the free relay means the free daily limit (25 searches per IP in total, then pay per call) was hit, and the message explains how to upgrade. Search, news and search-and-read reject queries shorter than 2 characters (after trimming) before any request, so nothing is sent or charged; other 4xx errors from the free relay say to fix the input instead of retrying it unchanged.
 
 See [CHANGELOG.md](CHANGELOG.md) for release notes.
 

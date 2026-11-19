@@ -51,7 +51,7 @@ def test_paid_without_wallet(monkeypatch):
 def test_free_limit_message_wording(monkeypatch):
     mock(monkeypatch, _client, 429, {})
     out = AgentSearchTool().run(query="hi")
-    assert "up to 25 searches/day per IP" in out and "per user" not in out
+    assert "searches per IP in total" in out and "per user" not in out
 
 
 @pytest.mark.parametrize("env", ["POCKET_PRIVATE_KEY", "AGENTSEARCH_WALLET_PRIVATE_KEY"])
