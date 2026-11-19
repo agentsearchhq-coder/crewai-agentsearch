@@ -62,14 +62,14 @@ class RenderInput(BaseModel):
 
 
 class AgentSearchTool(BaseTool):
-    """Live web search. Free by default (up to 25 searches/day per IP).
+    """Live web search. Free with no wallet (up to 25 searches/day per IP).
 
-    Paid, unlimited search is opt-in only: mode="paid", or mode="auto" with AGENTSEARCH_MODE=paid
-    (needs the [paid] extra and a wallet key). A wallet key alone does not switch search to paid."""
+    With a wallet configured (and the [paid] extra), the default mode="auto" pays $0.003 per search (unlimited);
+    mode="free" or AGENTSEARCH_MODE=free keeps it free."""
 
     name: str = "agentsearch_search"
     description: str = ("Live web search. Returns up to 5 ranked results (title, url, content). Use for current facts or finding URLs. "
-                        "Free by default; paid mode ($0.003) also honors freshness/date range, country, language and include/exclude domain filters. "
+                        "Free without a wallet; with a wallet $0.003 per search, which also honors freshness/date range, country, language and include/exclude domain filters. "
                         "For recent news use agentsearch_news_search.")
     args_schema: Type[BaseModel] = SearchInput
     mode: Literal["auto", "free", "paid"] = "auto"
@@ -114,7 +114,7 @@ class AgentSearchSearchAndReadTool(BaseTool):
     description: str = (
         "Search the live web and return the top results with each page's main text in one paid call ($0.005 USDC on Base, charged only when at least one page returns text). "
         "Cheaper than a $0.003 search plus three $0.002 extracts ($0.009) and one payment instead of four. Optional freshness, dates, country, language and domain filters. Default 3 results (max 5), default 8000 characters per page (max 20000). "
-        "Pass render_fallback=true to render at most one thin page in the same call. Direct x402 only — not available on Pocket. Search itself stays free by default."
+        "Pass render_fallback=true to render at most one thin page in the same call. Direct x402 only — not available on Pocket. Plain search is free without a wallet."
     )
     args_schema: Type[BaseModel] = SearchAndReadInput
 

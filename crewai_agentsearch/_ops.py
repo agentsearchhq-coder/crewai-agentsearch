@@ -10,36 +10,30 @@ from typing import Any, Optional
 from . import _client as c
 
 
-_noted_key_without_opt_in = False
-
-
 def resolve_search_mode(mode: str = "auto") -> str:
     """Return "paid" or "free" for a search call.
 
-    mode="paid" and mode="free" are explicit and returned as-is (explicit paid without the [paid] extra
-    still errors with install instructions, in call_portal). mode="auto" is free unless paid is opted in
-    with AGENTSEARCH_MODE=paid; a wallet key in the environment alone does NOT switch to paid. If paid is
-    opted in (or a key is set) but the [paid] extra is missing, auto falls back to free with a warning.
+    mode="paid" and mode="free" are explicit and returned as-is. mode="auto" (the default) pays for search when a
+    wallet is configured (AGENTSEARCH_WALLET_PRIVATE_KEY, POCKET_PRIVATE_KEY or AGENTSEARCH_WALLET_FILE) or
+    AGENTSEARCH_MODE=paid, and is free otherwise; AGENTSEARCH_MODE=free keeps it free (the opt-out). Before this
+    release a wallet key alone never made search paid. If paid is wanted but the [paid] extra is missing, auto
+    falls back to free with a warning.
     """
-    global _noted_key_without_opt_in
     if mode in ("paid", "free"):
         return mode
-    wants_paid = c.env_mode() == "paid"
-    if (wants_paid or c.has_wallet_key()) and not c.paid_extra_installed():
-        c.logger.warning(
-            "AgentSearch: %s, but the [paid] extra is not installed; using free search instead. "
-            "To enable paid search: %s",
-            "AGENTSEARCH_MODE=paid is set" if wants_paid else "a wallet key is set", c.PAID_INSTALL_HINT,
-        )
+    env = c.env_mode()
+    if env == "free":
         return "free"
-    if wants_paid:
+    if env == "paid" or c.has_wallet_key():
+        if not c.paid_extra_installed():
+            c.logger.warning(
+                "AgentSearch: %s, but the [paid] extra is not installed; using free search instead. "
+                "To enable paid search: %s",
+                "AGENTSEARCH_MODE=paid is set" if env == "paid" else "a wallet is configured", c.PAID_INSTALL_HINT,
+            )
+            return "free"
+        c.announce_paid_search()
         return "paid"
-    if c.has_wallet_key() and not _noted_key_without_opt_in:
-        _noted_key_without_opt_in = True
-        c.logger.info(
-            "AgentSearch: a wallet key is set, but search stays free in mode='auto'. "
-            "Use mode='paid' or AGENTSEARCH_MODE=paid to opt in to paid search."
-        )
     return "free"
 
 
@@ -56,8 +50,8 @@ def search(query: str, max_results: Optional[int] = None, mode: str = "auto", **
             body: dict[str, Any] = {"query": query, **_filters(filters)}
             if max_results:
                 body["max_results"] = max_results
-            return c.dumps(c.call_portal("search", body))
-        out = c.free_search(query, max_results)
+            return c.dumps(c.with_mode(c.call_portal("search", body), "paid"))
+        out = c.with_mode(c.free_search(query, max_results), "free")
         if _filters(filters) and isinstance(out, dict):
             out = {**out, "note": "Filters (freshness, dates, country, language, domains) apply only to paid search; free search ignored them."}
         return c.dumps(out)

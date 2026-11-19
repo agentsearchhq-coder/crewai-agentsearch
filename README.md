@@ -4,7 +4,7 @@
 
 | Tool | Name | Cost |
 |---|---|---|
-| `AgentSearchTool` | `agentsearch_search` | **Free** (up to 25 searches/day per IP, up to 5 results, no key). Paid and unlimited only when you opt in (see Paid mode). |
+| `AgentSearchTool` | `agentsearch_search` | **Free** with no wallet (up to 25 searches/day per IP, up to 5 results, no key). With a wallet and the `[paid]` extra, $0.003/call and unlimited (from 0.6.0; see Paid mode). |
 | `AgentSearchNewsTool` | `agentsearch_news_search` | $0.003/call (recent news with publish dates; no results, no charge) |
 | `AgentSearchExtractTool` | `agentsearch_extract` | $0.002/call (USDC on Base via x402 to AgentSearch) |
 | `AgentSearchRenderTool` | `agentsearch_render` | $0.005/call (headless browser for JS pages) |
@@ -53,27 +53,34 @@ Install the `paid` extra (`pip install "crewai-agentsearch[paid]"`) and set `AGE
 
 News, extract, render, screenshot and search-and-read are always paid and need the key. News, screenshot and search-and-read exist only on the direct route (not on Pocket).
 
-**Paid search is opt-in (changed in 0.2.1).** Setting a wallet key does *not* make search paid. `AgentSearchTool` (default `mode="auto"`) stays on free search until you opt in in one of two ways:
+**With a wallet, search is paid by default (changed in 0.6.0).** `AgentSearchTool` (default `mode="auto"`) pays $0.003 per search when a wallet is set and the `[paid]` extra is installed, and uses the free tier when no wallet is set. To keep search free with a wallet:
 
 ```python
-AgentSearchTool(mode="paid")   # always paid search
+AgentSearchTool(mode="free")   # always free search
 ```
 
 ```bash
-export AGENTSEARCH_MODE=paid   # opt in for AgentSearchTool in the default mode="auto"
+export AGENTSEARCH_MODE=free   # keep AgentSearchTool free in the default mode="auto"
 ```
 
 | Setup | `AgentSearchTool` search |
 |---|---|
-| `mode="auto"` (default), no `AGENTSEARCH_MODE` | Free, even if a wallet key is set |
+| `mode="auto"` (default), no wallet | Free |
+| `mode="auto"` (default) + wallet key or `AGENTSEARCH_WALLET_FILE` | Paid ($0.003) |
+| `mode="auto"` + `AGENTSEARCH_MODE=free` | Free, even with a wallet |
 | `mode="auto"` + `AGENTSEARCH_MODE=paid` | Paid |
 | `mode="auto"` + paid opted in or a key set, but `[paid]` extra not installed | Free, with a logged warning |
 | `mode="paid"` | Paid; without the `[paid]` extra it returns an error that tells you how to install it |
 | `mode="free"` | Always free |
 
+Every search result has an `agentsearch_mode` field (`free: ...` / `paid: ...`), and the first paid search in a process logs one `AgentSearch search mode: paid ...` line. 0.2.1-0.5.x kept search free with a wallet unless you opted in.
+
+**Reuse a wallet you already have (0.6.0+).** Instead of pasting a key, set `AGENTSEARCH_WALLET_FILE` to a file holding a 64-hex private key, or JSON with a `privateKey` field. `AGENTSEARCH_WALLET_FILE=agentcash` reuses AgentCash's `~/.agentcash/wallet.json`. The file is read only when signing and its contents are never logged. Encrypted keystores and remote signers (CDP server wallets) are not supported yet.
+
 | Env var | Default |
 |---|---|
-| `AGENTSEARCH_MODE` | unset (`paid` opts `mode="auto"` in to paid search; `free` forces free) |
+| `AGENTSEARCH_MODE` | unset = `auto` (paid search when a wallet is set); `free` forces free; `paid` forces paid (in `mode="auto"`) |
+| `AGENTSEARCH_WALLET_FILE` | unset (path to a wallet file instead of a pasted key; `agentcash` = `~/.agentcash/wallet.json`) |
 | `AGENTSEARCH_MAX_TOTAL_ATOMIC` | `1000000` ($1.00 per process) |
 | `AGENTSEARCH_PAYMENT_ROUTE` | `direct` (AgentSearch's x402 API); `pocket` = Pocket Network Agentic Portal at $0.005/call |
 | `AGENTSEARCH_MAX_PER_CALL_ATOMIC` | `20000` on the direct route, `5000` on Pocket ($0.020 / $0.005; can only be lowered) |

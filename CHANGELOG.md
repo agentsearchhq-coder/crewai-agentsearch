@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.6.0 (2026-11-19)
+- **With a wallet, search pays by default.** In the default mode, search now pays $0.003 per call over x402 to AgentSearch's own API ($0.005 with `AGENTSEARCH_PAYMENT_ROUTE=pocket`) when a wallet is configured and the `[paid]` extra is installed. With no wallet it uses the free relay exactly as before. `AGENTSEARCH_MODE=free` (or `mode="free"`) is the opt-out. Spend caps are unchanged (per call and `AGENTSEARCH_MAX_TOTAL_ATOMIC`, default $1.00). Previously a wallet key alone kept search free.
+- **Reuse an existing wallet:** `AGENTSEARCH_WALLET_FILE` points at a file holding a 64-hex key or JSON with `privateKey` (`agentcash` = AgentCash's `~/.agentcash/wallet.json`). Read only when signing; never logged. Encrypted keystores and remote signers (CDP server wallets) are a follow-up.
+- **Mode is visible:** every search result has an `agentsearch_mode` field (`"free: ..."` / `"paid: ..."`), and the first paid search in a process logs one `AgentSearch search mode: paid ...` warning line.
+
 ## 0.5.3 (2026-11-16)
 - Docs only: README tool table: news $0.003/call and screenshot $0.004/call (were still $0.005). Live direct prices: search and news $0.003, extract $0.002, render $0.005, screenshot $0.004, search_and_read $0.005; Pocket route unchanged at $0.005. No code or behavior change.
 

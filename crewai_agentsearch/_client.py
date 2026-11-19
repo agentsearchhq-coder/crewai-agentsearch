@@ -25,8 +25,7 @@ PORTAL_PAYEE = "0xF732ea490c5766071785a2310523f7fA2CEbB829"
 MAX_PER_CALL_ATOMIC = 5000  # $0.005 hard ceiling
 DEFAULT_SESSION_CAP_ATOMIC = 1_000_000  # $1.00
 KEY_ENV_VARS = ("AGENTSEARCH_WALLET_PRIVATE_KEY", "POCKET_PRIVATE_KEY")
-# Paid search is opt-in: mode="paid" on the tool, or AGENTSEARCH_MODE=paid in the environment.
-# A wallet key in the environment on its own never switches search to paid.
+# Search pays when a wallet is configured (default mode "auto"); mode="free" or AGENTSEARCH_MODE=free keeps it free.
 MODE_ENV_VAR = "AGENTSEARCH_MODE"
 PAID_INSTALL_HINT = "pip install 'crewai-agentsearch[paid]'"
 SERVICES = {
@@ -61,8 +60,8 @@ FREE_LIMIT_MESSAGE = (
     f"Free search limit reached (up to {FREE_RELAY_DAILY_LIMIT} searches/day per IP; resets daily). "
     "For unlimited search plus extract/render, set AGENTSEARCH_WALLET_PRIVATE_KEY to the key of a NEW wallet "
     "funded with a little USDC on Base (search $0.003, extract $0.002, render $0.005 per call via x402 to AgentSearch; capped by AGENTSEARCH_MAX_TOTAL_ATOMIC, "
-    f"default $1.00), install crewai-agentsearch[paid], and opt in to paid search with mode='paid' or "
-    f"AGENTSEARCH_MODE=paid. Docs: {DOCS}"
+    f"default $1.00; or AGENTSEARCH_WALLET_FILE=agentcash to reuse an AgentCash wallet) and install crewai-agentsearch[paid]: "
+    f"with a wallet, search pays per call (unless AGENTSEARCH_MODE=free). Docs: {DOCS}"
 )
 
 
@@ -175,13 +174,48 @@ def free_search(query: str, max_results: Optional[int] = None, client: Optional[
 # ---------- paid mode ----------
 
 def has_wallet_key() -> bool:
-    return any((os.environ.get(n) or "").strip() for n in KEY_ENV_VARS)
+    """True when a wallet is configured (a key env var or AGENTSEARCH_WALLET_FILE)."""
+    return wallet_source() is not None
+
+
+def search_mode_label(resolved: str) -> str:
+    """Human-readable search mode, put on every search result as agentsearch_mode."""
+    if resolved == "paid":
+        route = "direct"
+        try:
+            route = payment_route()
+        except Exception:
+            pass
+        if route == "pocket":
+            return ("paid: x402 via the Pocket portal, $0.005 per search (AGENTSEARCH_PAYMENT_ROUTE=pocket; "
+                    "AGENTSEARCH_MODE=free keeps search free)")
+        return ("paid: x402 to AgentSearch's API, $0.003 per search (wallet configured; "
+                "AGENTSEARCH_MODE=free keeps search free)")
+    if has_wallet_key():
+        return ("free: AgentSearch free tier, up to 25 searches/day per IP (mode free, or the [paid] extra is "
+                "missing; a wallet is configured but search does not pay)")
+    return "free: AgentSearch free tier, up to 25 searches/day per IP (no wallet configured)"
+
+
+def with_mode(out: Any, resolved: str) -> Any:
+    return {"agentsearch_mode": search_mode_label(resolved), **out} if isinstance(out, dict) else out
+
+
+_announced_paid = False
+
+
+def announce_paid_search() -> None:
+    """Log once per process that search pays, so a wallet never makes search paid silently."""
+    global _announced_paid
+    if not _announced_paid:
+        _announced_paid = True
+        logger.warning("AgentSearch search mode: %s; wallet from %s.", search_mode_label("paid"), wallet_source())
 
 
 def env_mode() -> str:
-    """AGENTSEARCH_MODE as "paid", "free" or "" (unset or unrecognised). Only affects mode="auto"."""
+    """AGENTSEARCH_MODE as "paid", "free", "auto" or "" (unset or unrecognised). Only affects mode="auto"."""
     v = (os.environ.get(MODE_ENV_VAR) or "").strip().lower()
-    return v if v in ("paid", "free") else ""
+    return v if v in ("paid", "free", "auto") else ""
 
 
 def paid_extra_installed() -> bool:
@@ -196,17 +230,68 @@ def paid_extra_installed() -> bool:
     return True
 
 
+# Reuse an existing wallet file instead of pasting a raw key: a file holding a 64-hex key (for example a
+# ClawRouter-style wallet.key) or JSON with a "privateKey" field (AgentCash's ~/.agentcash/wallet.json).
+# The value "agentcash" means ~/.agentcash/wallet.json. Read only when signing; contents are never logged.
+# Encrypted keystores and remote signers (CDP server wallets) are not supported yet.
+WALLET_FILE_ENV_VAR = "AGENTSEARCH_WALLET_FILE"
+
+
+def wallet_file_path() -> Optional[str]:
+    raw = (os.environ.get(WALLET_FILE_ENV_VAR) or "").strip()
+    if not raw:
+        return None
+    if raw.lower() == "agentcash":
+        return os.path.join(os.path.expanduser("~"), ".agentcash", "wallet.json")
+    return os.path.expanduser(raw)
+
+
+def wallet_source() -> Optional[str]:
+    """Name of the env var the wallet comes from, or None when no wallet is configured. Never the key."""
+    for name in KEY_ENV_VARS:
+        if (os.environ.get(name) or "").strip():
+            return name
+    return WALLET_FILE_ENV_VAR if wallet_file_path() else None
+
+
+def _key_from_wallet_file(path: str) -> str:
+    try:
+        with open(path, "r", encoding="utf-8") as fh:
+            content = fh.read().strip()
+    except OSError as e:
+        raise AgentSearchError(f"{WALLET_FILE_ENV_VAR} points to a file that could not be read "
+                               f"({type(e).__name__}): {path}. Nothing was signed.") from None
+    if not content.startswith("{"):
+        return content
+    try:
+        data = json.loads(content)
+    except ValueError:
+        raise AgentSearchError(f"{WALLET_FILE_ENV_VAR} ({path}) is not valid JSON. The contents are not shown. "
+                               "Nothing was signed.") from None
+    pk = data.get("privateKey", data.get("private_key")) if isinstance(data, dict) else None
+    if not isinstance(pk, str):
+        raise AgentSearchError(f'{WALLET_FILE_ENV_VAR} ({path}) has no "privateKey" field (encrypted keystores are '
+                               "not supported). The contents are not shown. Nothing was signed.")
+    return pk.strip()
+
+
+def _normalize_key(raw: str, name: str) -> str:
+    if not re.fullmatch(r"(0x)?[0-9a-fA-F]{64}", raw):
+        raise AgentSearchError(
+            f"{name} is set but is not a private key (expected 64 hex characters, optional 0x prefix). "
+            "The value is not shown. Nothing was signed."
+        )
+    return raw if raw.startswith("0x") else "0x" + raw
+
+
 def _read_wallet_key() -> Optional[str]:
     for name in KEY_ENV_VARS:
         raw = (os.environ.get(name) or "").strip()
-        if not raw:
-            continue
-        if not re.fullmatch(r"(0x)?[0-9a-fA-F]{64}", raw):
-            raise AgentSearchError(
-                f"{name} is set but is not a private key (expected 64 hex characters, optional 0x prefix). "
-                "The value is not shown. Nothing was signed."
-            )
-        return raw if raw.startswith("0x") else "0x" + raw
+        if raw:
+            return _normalize_key(raw, name)
+    path = wallet_file_path()
+    if path:
+        return _normalize_key(_key_from_wallet_file(path), f"{WALLET_FILE_ENV_VAR} ({path})")
     return None
 
 

@@ -55,13 +55,19 @@ def test_free_limit_message_wording(monkeypatch):
 
 
 @pytest.mark.parametrize("env", ["POCKET_PRIVATE_KEY", "AGENTSEARCH_WALLET_PRIVATE_KEY"])
-def test_auto_with_env_key_stays_free(monkeypatch, env):
+def test_auto_with_env_key_pays_unless_mode_free(monkeypatch, env):
+    """0.6.0: with a wallet, search pays by default; AGENTSEARCH_MODE=free keeps it free."""
     seen = mock(monkeypatch, _client, 200, {"results": [{"title": "t", "url": "https://a", "content": "c"}]})
-    no_portal(monkeypatch)
     monkeypatch.setenv(env, DUMMY_KEY)
     monkeypatch.setattr(_client, "paid_extra_installed", lambda: True)
+    monkeypatch.setattr(_client, "call_portal", lambda op, body, client=None: {"paid": op})
+    out = json.loads(AgentSearchTool().run(query="hi"))
+    assert out["paid"] == "search" and out["agentsearch_mode"].startswith("paid: ") and not seen
+    no_portal(monkeypatch)
+    monkeypatch.setenv("AGENTSEARCH_MODE", "free")
     out = json.loads(AgentSearchTool().run(query="hi"))
     assert out["results"][0]["url"] == "https://a" and "payment" not in out
+    assert out["agentsearch_mode"].startswith("free: ")
     assert [str(r.url) for r in seen] == [RELAY]
 
 
