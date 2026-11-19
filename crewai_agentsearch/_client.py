@@ -57,7 +57,7 @@ PRICES_SENTENCE = ("paid per call in USDC on Base via x402 to AgentSearch's own 
 DOCS = "https://agentsearchhq.com/?utm_source=crewai-agentsearch&utm_medium=package"
 
 FREE_LIMIT_MESSAGE = (
-    f"Free search limit reached (up to {FREE_RELAY_DAILY_LIMIT} searches/day per IP; resets daily). "
+    f"Free search allowance used up ({FREE_RELAY_DAILY_LIMIT} searches per IP in total, not per day, so it does not reset). "
     "Add a wallet key to never get blocked: fund about $1 of USDC on Base (no ETH, no account), wallet setup takes about 2 minutes: https://agentsearchhq.com/wallet-setup?utm_source=crewai-agentsearch&utm_medium=package-error . "
     "For unlimited search plus extract/render, set AGENTSEARCH_WALLET_PRIVATE_KEY to the key of a NEW wallet "
     "funded with a little USDC on Base (search $0.003, extract $0.002, render $0.005 per call via x402 to AgentSearch; capped by AGENTSEARCH_MAX_TOTAL_ATOMIC, "
@@ -193,9 +193,9 @@ def search_mode_label(resolved: str) -> str:
         return ("paid: x402 to AgentSearch's API, $0.003 per search (wallet configured; "
                 "AGENTSEARCH_MODE=free keeps search free)")
     if has_wallet_key():
-        return ("free: AgentSearch free tier, up to 25 searches/day per IP (mode free, or the [paid] extra is "
+        return ("free: AgentSearch free tier, 25 searches per IP in total, then pay per call (mode free, or the [paid] extra is "
                 "missing; a wallet is configured but search does not pay)")
-    return "free: AgentSearch free tier, up to 25 searches/day per IP (no wallet configured)"
+    return "free: AgentSearch free tier, 25 searches per IP in total, then pay per call (no wallet configured)"
 
 
 def with_mode(out: Any, resolved: str) -> Any:
