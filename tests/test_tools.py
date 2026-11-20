@@ -51,7 +51,7 @@ def test_paid_without_wallet(monkeypatch):
 def test_free_limit_message_wording(monkeypatch):
     mock(monkeypatch, _client, 429, {})
     out = AgentSearchTool().run(query="hi")
-    assert "up to 25 searches/day per IP" in out and "per user" not in out
+    assert "25 free searches per IP in total, then pay per call" in out and "per user" not in out
 
 
 @pytest.mark.parametrize("env", ["POCKET_PRIVATE_KEY", "AGENTSEARCH_WALLET_PRIVATE_KEY"])
@@ -136,3 +136,11 @@ def test_explicit_paid_missing_extra_errors(monkeypatch):
 def test_live_free_search():
     out = json.loads(AgentSearchTool(mode="free").run(query="CrewAI custom tools", max_results=2))
     assert out["results"][0]["url"].startswith("http")
+
+
+def test_free_limit_message_lifetime_wording():
+    # 2026-11-19: free search is 25 searches per IP in total (lifetime), then pay per call; no daily reset.
+    msg = _client.FREE_LIMIT_MESSAGE
+    assert "25 free searches per IP in total, then pay per call" in msg
+    assert "searches/day" not in msg and "resets daily" not in msg
+    assert "per IP in total" in _client.search_mode_label("free")

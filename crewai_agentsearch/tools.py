@@ -62,7 +62,7 @@ class RenderInput(BaseModel):
 
 
 class AgentSearchTool(BaseTool):
-    """Live web search. Free with no wallet (up to 25 searches/day per IP).
+    """Live web search. Free with no wallet (25 free searches per IP in total, then pay per call).
 
     With a wallet configured (and the [paid] extra), the default mode="auto" pays $0.003 per search (unlimited);
     mode="free" or AGENTSEARCH_MODE=free keeps it free."""
