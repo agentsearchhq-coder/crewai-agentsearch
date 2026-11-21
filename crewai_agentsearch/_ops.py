@@ -61,10 +61,19 @@ def search(query: str, max_results: Optional[int] = None, mode: str = "auto", **
 
 def paid(op: str, **kwargs: Any) -> str:
     try:
-        if not c.has_wallet_key():
-            raise c.AgentSearchError(c.paid_only_message(f"agentsearch_{op}"))
         fb = kwargs.pop("render_fallback", None)
         body = {k: v for k, v in kwargs.items() if v is not None}
+        if not c.has_wallet_key():
+            if not c.free_trial_enabled():
+                raise c.AgentSearchError(c.paid_only_message(f"agentsearch_{op}"))
+            try:
+                if op == "extract":
+                    return c.dumps(c.free_extract_with_fallback(body, fb))
+                if op == "render":
+                    return c.dumps(c.free_trial("render", body))
+            except c.FreeTrialUnavailable:
+                raise c.AgentSearchError(c.paid_only_message(f"agentsearch_{op}")) from None
+            raise c.AgentSearchError(c.paid_only_message(f"agentsearch_{op}"))
         if op == "extract":
             return c.dumps(c.extract_with_fallback(body, fb))
         return c.dumps(c.call_portal(op, body))
@@ -72,8 +81,8 @@ def paid(op: str, **kwargs: Any) -> str:
         return f"Error: {e}"
 
 def search_and_read(query: str, num_results: Optional[int] = None, max_chars: Optional[int] = None,
-                    render_fallback: Optional[bool] = None, **filters: Any) -> str:
-    """Search the live web and read the top pages in one paid call ($0.005, direct x402 only)."""
+                    render_fallback: Optional[bool] = None, mode: str = "auto", **filters: Any) -> str:
+    """Search the live web and read the top pages. Free by default (10 per IP); paid $0.005 with AGENTSEARCH_MODE=paid (direct x402 only)."""
     try:
         query = c.check_query(query)
         body: dict[str, Any] = {"query": query, **_filters(filters)}
@@ -83,21 +92,23 @@ def search_and_read(query: str, num_results: Optional[int] = None, max_chars: Op
             body["max_chars"] = int(max_chars)
         if render_fallback is not None:
             body["render_fallback"] = bool(render_fallback)
-        return c.dumps(c.call_portal("search_and_read", body))
+        if c.resolve_life_tool_mode(mode) == "paid":
+            return c.dumps(c.call_portal("search_and_read", body))
+        return c.dumps(c.with_mode(c.free_life_tool("search_and_read", body), "free"))
     except Exception as e:
         return f"Error: {e}"
 
 
-def news(query: str, max_results: Optional[int] = None, **filters: Any) -> str:
-    """Recent news articles in one paid call ($0.003, direct x402 only; no results, no charge)."""
+def news(query: str, max_results: Optional[int] = None, mode: str = "auto", **filters: Any) -> str:
+    """Recent news articles. Free by default (10 per IP); paid $0.003 with AGENTSEARCH_MODE=paid (direct x402 only)."""
     try:
         query = c.check_query(query)
-        if not c.has_wallet_key():
-            raise c.AgentSearchError(c.paid_only_message("agentsearch_news_search"))
         body: dict[str, Any] = {"query": query, **_filters(filters)}
         if max_results is not None:
             body["max_results"] = max(1, min(int(max_results), 10))
-        return c.dumps(c.call_portal("news", body))
+        if c.resolve_life_tool_mode(mode) == "paid":
+            return c.dumps(c.call_portal("news", body))
+        return c.dumps(c.with_mode(c.free_life_tool("news", body), "free"))
     except Exception as e:
         return f"Error: {e}"
 
@@ -109,16 +120,14 @@ def _shot_dir() -> str:
 
 
 def screenshot(url: str, format: Optional[str] = None, full_page: Optional[bool] = None,
-               viewport: Optional[dict[str, int]] = None) -> str:
-    """Website screenshot in one paid call ($0.004, direct x402 only).
+               viewport: Optional[dict[str, int]] = None, mode: str = "auto") -> str:
+    """Website screenshot. Free by default (10 per IP); paid $0.004 with AGENTSEARCH_MODE=paid (direct x402 only).
 
     The image is saved to a file (AGENTSEARCH_SCREENSHOT_DIR, default a temp folder) and the returned JSON holds
     its path plus metadata, not the base64 bytes, so the image does not flood the model's context."""
     try:
         if not url or not str(url).strip().lower().startswith(("http://", "https://")):
             raise c.AgentSearchError("url must be a full http(s) URL")
-        if not c.has_wallet_key():
-            raise c.AgentSearchError(c.paid_only_message("agentsearch_screenshot"))
         body: dict[str, Any] = {"url": str(url).strip()}
         if format is not None:
             body["format"] = format
@@ -126,7 +135,10 @@ def screenshot(url: str, format: Optional[str] = None, full_page: Optional[bool]
             body["full_page"] = bool(full_page)
         if viewport is not None:
             body["viewport"] = {"width": int(viewport["width"]), "height": int(viewport["height"])}
-        out = c.call_portal("screenshot", body)
+        if c.resolve_life_tool_mode(mode) == "paid":
+            out = c.call_portal("screenshot", body)
+        else:
+            out = c.with_mode(c.free_life_tool("screenshot", body), "free")
         shot = out.get("screenshot") if isinstance(out, dict) else None
         if isinstance(shot, dict) and isinstance(shot.get("base64"), str):
             ext = "jpg" if str(shot.get("format") or format or "png").lower() in ("jpeg", "jpg") else "png"
